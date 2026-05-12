@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kanban",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "kanban-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server/src/index.js"],
+      "port": 3055,
+      "env": {
+        "DB_DIR": "/tmp/kanban-test",
+        "BASIC_AUTH_PASS": "testpw123",
+        "PORT": "3055"
+      }
+    }
+  ]
+}
