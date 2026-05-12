@@ -64,7 +64,13 @@ app.set('etag', false);
 // only the password is checked (single shared secret for the 4 internal PCs).
 // When the env var is unset (local dev), auth is bypassed.
 const AUTH_PASS = process.env.BASIC_AUTH_PASS || '';
-const AUTH_REALM = 'Kanban interne';
+// "Day" starts at 06:00 Paris time (UTC+2). The realm includes the date, so
+// browsers invalidate cached credentials and re-prompt at 06:00 each morning.
+function getAuthRealm() {
+  const parisDate = new Date(Date.now() + 2 * 60 * 60 * 1000); // UTC+2
+  if (parisDate.getUTCHours() < 6) parisDate.setUTCDate(parisDate.getUTCDate() - 1);
+  return `Kanban OLDA - ${parisDate.toISOString().slice(0, 10)}`;
+}
 function checkBasicAuth(headerValue) {
   if (!AUTH_PASS) return true; // disabled
   if (!headerValue || !headerValue.startsWith('Basic ')) return false;
@@ -87,7 +93,7 @@ function basicAuthMiddleware(req, res, next) {
   // Healthcheck is always public so Railway can probe it.
   if (req.path === '/health' || req.path === '/api/health') return next();
   if (checkBasicAuth(req.headers.authorization)) return next();
-  res.set('WWW-Authenticate', `Basic realm="${AUTH_REALM}", charset="UTF-8"`);
+  res.set('WWW-Authenticate', `Basic realm="${getAuthRealm()}", charset="UTF-8"`);
   return res.status(401).json({ error: 'Authentication required' });
 }
 
