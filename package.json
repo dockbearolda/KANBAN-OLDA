@@ -12,6 +12,9 @@
     "start": "npm run start -w server",
     "install:all": "npm install"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "concurrently": "^9.1.0"
   }
