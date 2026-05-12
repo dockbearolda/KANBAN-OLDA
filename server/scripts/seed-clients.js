@@ -1,9 +1,14 @@
 /* One-shot import of the 89-client list.
  * Run: node server/scripts/seed-clients.js
  * Targets http://localhost:5173 (Vite proxy → server) by default.
+ * Override with API_BASE=https://… BASIC_AUTH_PASS=… for prod.
  * Skips rows whose SOCIÉTÉ already exists. */
 
 const BASE = process.env.API_BASE || 'http://localhost:5173';
+const AUTH_PASS = process.env.BASIC_AUTH_PASS || '';
+const AUTH_HEADER = AUTH_PASS
+  ? { Authorization: 'Basic ' + Buffer.from(':' + AUTH_PASS).toString('base64') }
+  : {};
 
 const RAW = [
   ['VOILA SXM',                 'GRAND CASE',                'Clara',           '0690377241', ''],
@@ -125,7 +130,7 @@ function normalize([company, city, name, phone, email]) {
 }
 
 async function main() {
-  const existing = await fetch(`${BASE}/api/clients`).then((r) => r.json());
+  const existing = await fetch(`${BASE}/api/clients`, { headers: AUTH_HEADER }).then((r) => r.json());
   const existingKeys = new Set(
     existing.map((c) => `${(c.company || '').toUpperCase()}|${(c.name || '').toLowerCase()}`)
   );
@@ -141,7 +146,7 @@ async function main() {
     }
     const res = await fetch(`${BASE}/api/clients`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...AUTH_HEADER },
       body: JSON.stringify(c),
     });
     if (!res.ok) {
