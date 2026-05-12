@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { USERS } from './constants.js';
+import { USERS, VIEW_ALL } from './constants.js';
 
 const STORAGE_KEY = 'kanban_user';
 
@@ -9,10 +9,11 @@ export function UserProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved && USERS.includes(saved) ? saved : null;
+      if (saved && (saved === VIEW_ALL || USERS.includes(saved))) return saved;
     } catch {
-      return null;
+      /* ignore */
     }
+    return VIEW_ALL;
   });
 
   useEffect(() => {

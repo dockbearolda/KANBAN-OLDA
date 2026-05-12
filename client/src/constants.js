@@ -15,3 +15,5 @@ export const SUBCATS = {
 };
 
 export const USERS = ['L', 'C', 'M', 'J'];
+
+export const VIEW_ALL = 'all';

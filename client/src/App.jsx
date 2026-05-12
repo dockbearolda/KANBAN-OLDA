@@ -1,6 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { UserProvider, useUser } from './UserContext.jsx';
-import Welcome from './components/Welcome.jsx';
 import Header from './components/Header.jsx';
 import Board from './components/Board.jsx';
 import * as api from './api.js';
@@ -90,8 +89,6 @@ function Shell() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [currentUser]);
-
-  if (!currentUser) return <Welcome />;
 
   return (
     <div className="min-h-screen flex flex-col bg-cream">

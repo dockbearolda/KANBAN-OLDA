@@ -12,9 +12,10 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { COLUMNS, SUBCATS } from '../constants.js';
+import { COLUMNS, SUBCATS, VIEW_ALL } from '../constants.js';
 import * as api from '../api.js';
 import { socket, isOwnEcho } from '../socket.js';
+import { useUser } from '../UserContext.jsx';
 import Card from './Card.jsx';
 import ProductionPicker from './ProductionPicker.jsx';
 import NewOrderModal from './NewOrderModal.jsx';
@@ -80,6 +81,7 @@ function computePosition(sortedZoneItemsWithoutActive, targetIndex) {
 }
 
 export default function Board({ clients = [], setClients, onSync, newOrderOpen = false, onCloseNewOrder }) {
+  const { currentUser } = useUser();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -314,6 +316,17 @@ export default function Board({ clients = [], setClients, onSync, newOrderOpen =
 
   /* ---------------- grouping ---------------- */
 
+  // Filter by selected user (assignees include the user). When VIEW_ALL,
+  // every card is visible — that's the default state on first load.
+  const visibleOrders = useMemo(() => {
+    if (currentUser === VIEW_ALL) return orders;
+    return orders.filter((o) => {
+      const a = o.assignees;
+      if (!a) return false;
+      return String(a).split(',').map((s) => s.trim()).includes(currentUser);
+    });
+  }, [orders, currentUser]);
+
   // Stable per-zone arrays: when a zone's items haven't changed (same orders
   // in the same order, same object refs), reuse the previous array. This lets
   // React.memo on Column / CardList short-circuit re-renders of unaffected
@@ -328,7 +341,7 @@ export default function Board({ clients = [], setClients, onSync, newOrderOpen =
         next.set(col.id, []);
       }
     }
-    const sorted = [...orders].sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.id - b.id);
+    const sorted = [...visibleOrders].sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.id - b.id);
     for (const o of sorted) {
       if (o.status === 'production') {
         const key = `production:${o.prod_subcat || 'autres'}`;
@@ -347,7 +360,7 @@ export default function Board({ clients = [], setClients, onSync, newOrderOpen =
     }
     prevByColumnRef.current = next;
     return next;
-  }, [orders]);
+  }, [visibleOrders]);
 
   function countFor(col) {
     if (!col.sub) return byColumn.get(col.id)?.length ?? 0;

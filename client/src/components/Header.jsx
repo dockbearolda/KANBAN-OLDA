@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { USERS } from '../constants.js';
+import { USERS, VIEW_ALL } from '../constants.js';
 import { useUser } from '../UserContext.jsx';
 
 const USER_COLORS = {
@@ -7,6 +7,15 @@ const USER_COLORS = {
   C: 'bg-emerald-500',
   M: 'bg-sky-500',
   J: 'bg-violet-500',
+  [VIEW_ALL]: 'bg-slate-700',
+};
+
+const USER_LABELS = {
+  L: 'Utilisateur L',
+  C: 'Utilisateur C',
+  M: 'Utilisateur M',
+  J: 'Utilisateur J',
+  [VIEW_ALL]: 'Toutes les cartes',
 };
 
 export default function Header({ onNewOrder, onOpenClients }) {
@@ -60,14 +69,28 @@ export default function Header({ onNewOrder, onOpenClients }) {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setMenuOpen((v) => !v)}
-          className={`${USER_COLORS[currentUser]} w-9 h-9 rounded-full text-white font-semibold flex items-center justify-center shadow-card`}
-          aria-label="Changer d'utilisateur"
+          className={`${USER_COLORS[currentUser]} h-9 min-w-9 px-3 rounded-full text-white text-sm font-semibold flex items-center justify-center shadow-card`}
+          aria-label="Filtrer par utilisateur"
+          title={USER_LABELS[currentUser]}
         >
-          {currentUser}
+          {currentUser === VIEW_ALL ? 'Tous' : currentUser}
         </button>
         {menuOpen && (
-          <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-card border border-slate-200/70 py-1.5 z-40">
-            <div className="px-3 py-1 text-xs uppercase tracking-wide text-slate-400">Switch user</div>
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-card border border-slate-200/70 py-1.5 z-40">
+            <div className="px-3 py-1 text-xs uppercase tracking-wide text-slate-400">Afficher</div>
+            <button
+              onClick={() => {
+                setCurrentUser(VIEW_ALL);
+                setMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 ${currentUser === VIEW_ALL ? 'text-slate-900 font-medium' : 'text-slate-600'}`}
+            >
+              <span className={`${USER_COLORS[VIEW_ALL]} w-6 h-6 rounded-full text-white text-[10px] font-semibold flex items-center justify-center`}>
+                ALL
+              </span>
+              <span>Tous les collègues</span>
+            </button>
+            <div className="border-t border-slate-100 my-1" />
             {USERS.map((u) => (
               <button
                 key={u}
@@ -83,16 +106,6 @@ export default function Header({ onNewOrder, onOpenClients }) {
                 <span>Utilisateur {u}</span>
               </button>
             ))}
-            <div className="border-t border-slate-100 my-1" />
-            <button
-              onClick={() => {
-                setCurrentUser(null);
-                setMenuOpen(false);
-              }}
-              className="w-full text-left px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-50"
-            >
-              Se déconnecter
-            </button>
           </div>
         )}
       </div>
