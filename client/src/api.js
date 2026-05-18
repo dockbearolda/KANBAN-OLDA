@@ -42,3 +42,9 @@ export const getClients   = ()                => http('/api/clients');
 export const createClient = (data)            => http('/api/clients', { method: 'POST', body: data });
 export const updateClient = (id, patch)       => http(`/api/clients/${id}`, { method: 'PATCH', body: patch });
 export const deleteClient = (id)              => http(`/api/clients/${id}`, { method: 'DELETE' });
+
+// ---- Feedback ----
+export const getFeedback    = ()              => http('/api/feedback');
+export const createFeedback = (data)          => http('/api/feedback', { method: 'POST', body: data });
+export const updateFeedback = (id, patch)     => http(`/api/feedback/${id}`, { method: 'PATCH', body: patch });
+export const deleteFeedback = (id)            => http(`/api/feedback/${id}`, { method: 'DELETE' });

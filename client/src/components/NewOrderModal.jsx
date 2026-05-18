@@ -14,6 +14,8 @@ export default function NewOrderModal({ open, onClose, onSubmit, clients = [] })
   const { currentUser } = useUser();
   const [client, setClient] = useState('');
   const [matchedClient, setMatchedClient] = useState(null);
+  const [contactName, setContactName] = useState('');
+  const [contactNameTouched, setContactNameTouched] = useState(false);
   const [phone, setPhone] = useState('');
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [product, setProduct] = useState('');
@@ -31,6 +33,8 @@ export default function NewOrderModal({ open, onClose, onSubmit, clients = [] })
     if (!open) return;
     setClient('');
     setMatchedClient(null);
+    setContactName('');
+    setContactNameTouched(false);
     setPhone('');
     setPhoneTouched(false);
     setProduct('');
@@ -61,6 +65,7 @@ export default function NewOrderModal({ open, onClose, onSubmit, clients = [] })
       setClient(value);
       setMatchedClient(null);
       if (!phoneTouched) setPhone('');
+      if (!contactNameTouched) setContactName('');
       return;
     }
     const match = clients.find(
@@ -71,6 +76,7 @@ export default function NewOrderModal({ open, onClose, onSubmit, clients = [] })
     setMatchedClient(match ?? null);
     setClient(match?.company || value);
     if (!phoneTouched) setPhone(match?.phone ?? '');
+    if (!contactNameTouched) setContactName(match?.name ?? '');
   }
 
   function toggleAssignee(u) {
@@ -86,6 +92,7 @@ export default function NewOrderModal({ open, onClose, onSubmit, clients = [] })
     try {
       await onSubmit({
         title: client.trim(),
+        contact_name: contactName.trim(),
         phone: phone.trim(),
         product: product.trim(),
         qty: qty === '' ? 0 : Number(qty),
@@ -140,19 +147,27 @@ export default function NewOrderModal({ open, onClose, onSubmit, clients = [] })
 
           <div>
             <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+              Contact
+            </label>
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => { setContactName(e.target.value); setContactNameTouched(true); }}
+              placeholder="Prénom"
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-slate-400 focus:outline-none text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
               Téléphone
             </label>
-            <div className="flex items-center gap-2">
-              {matchedClient?.name && matchedClient?.company && (
-                <span className="text-sm text-slate-400 whitespace-nowrap">{matchedClient.name}</span>
-              )}
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => { setPhone(e.target.value); setPhoneTouched(true); }}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-slate-400 focus:outline-none text-sm"
-              />
-            </div>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => { setPhone(e.target.value); setPhoneTouched(true); }}
+              className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-slate-400 focus:outline-none text-sm"
+            />
           </div>
 
           <div>

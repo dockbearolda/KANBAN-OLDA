@@ -166,8 +166,10 @@ const VALID_SUBCATS = ['dtf', 'pressage', 'roland_uv', 'trotec', 'autres'];
 const ORDER_FIELDS = [
   'client_id', 'title', 'qty', 'product', 'note', 'status',
   'prod_subcat', 'urgent', 'due_date', 'assignees', 'position',
+  'contact_name', 'phone',
 ];
 const CLIENT_FIELDS = ['name', 'email', 'phone', 'company', 'city', 'notes'];
+const FEEDBACK_FIELDS = ['body', 'author', 'resolved'];
 
 // Per-field max lengths in characters. Acts as a sanity bound to prevent any
 // single field from filling the DB. Validated before insert/update.
@@ -178,6 +180,7 @@ const MAX_LEN = {
   note: 2000,
   assignees: 100,
   due_date: 32,
+  contact_name: 120,
   // clients
   name: 120,
   email: 200,
@@ -185,6 +188,9 @@ const MAX_LEN = {
   company: 200,
   city: 120,
   notes: 4000,
+  // feedback
+  body: 4000,
+  author: 40,
 };
 function checkStringLengths(body, allowedFields) {
   for (const k of allowedFields) {
@@ -200,8 +206,8 @@ function checkStringLengths(body, allowedFields) {
 const stmtSelectAllOrders = db.prepare('SELECT * FROM orders ORDER BY position ASC, id ASC');
 const stmtSelectOrderById = db.prepare('SELECT * FROM orders WHERE id = ?');
 const stmtInsertOrder = db.prepare(`
-  INSERT INTO orders (client_id, title, qty, product, note, status, prod_subcat, urgent, due_date, assignees, position)
-  VALUES (@client_id, @title, @qty, @product, @note, @status, @prod_subcat, @urgent, @due_date, @assignees, @position)
+  INSERT INTO orders (client_id, title, qty, product, note, status, prod_subcat, urgent, due_date, assignees, position, contact_name, phone)
+  VALUES (@client_id, @title, @qty, @product, @note, @status, @prod_subcat, @urgent, @due_date, @assignees, @position, @contact_name, @phone)
 `);
 const stmtDeleteOrder = db.prepare('DELETE FROM orders WHERE id = ?');
 const stmtMaxPositionForStatus = db.prepare(
@@ -349,6 +355,8 @@ app.post('/api/orders', (req, res) => {
       due_date: body.due_date ?? null,
       assignees: body.assignees ?? '',
       position,
+      contact_name: body.contact_name ?? '',
+      phone: body.phone ?? '',
     };
 
     const info = stmtInsertOrder.run(payload);
@@ -539,6 +547,81 @@ app.delete('/api/clients/:id', (req, res) => {
   } catch (err) {
     logger.error({ err }, "api error");
     res.status(500).json({ error: 'Failed to delete client' });
+  }
+});
+
+// ---------- Feedback ----------
+const stmtSelectAllFeedback = db.prepare('SELECT * FROM feedback ORDER BY resolved ASC, id DESC');
+const stmtSelectFeedbackById = db.prepare('SELECT * FROM feedback WHERE id = ?');
+const stmtInsertFeedback = db.prepare(`
+  INSERT INTO feedback (body, author, resolved)
+  VALUES (@body, @author, 0)
+`);
+const stmtUpdateFeedbackResolved = db.prepare(`
+  UPDATE feedback
+  SET resolved = @resolved,
+      resolved_at = CASE WHEN @resolved = 1 THEN CURRENT_TIMESTAMP ELSE NULL END
+  WHERE id = @id
+`);
+const stmtDeleteFeedback = db.prepare('DELETE FROM feedback WHERE id = ?');
+
+app.get('/api/feedback', (_req, res) => {
+  try {
+    res.json(stmtSelectAllFeedback.all());
+  } catch (err) {
+    logger.error({ err }, 'api error');
+    res.status(500).json({ error: 'Failed to fetch feedback' });
+  }
+});
+
+app.post('/api/feedback', (req, res) => {
+  try {
+    const body = req.body || {};
+    const lenError = checkStringLengths(body, FEEDBACK_FIELDS);
+    if (lenError) return res.status(400).json({ error: lenError });
+    const text = typeof body.body === 'string' ? body.body.trim() : '';
+    if (!text) return res.status(400).json({ error: 'Le message est vide' });
+    const info = stmtInsertFeedback.run({
+      body: text,
+      author: typeof body.author === 'string' ? body.author.slice(0, 40) : '',
+    });
+    const item = stmtSelectFeedbackById.get(info.lastInsertRowid);
+    broadcast('feedback:created', { item }, senderOf(req));
+    res.status(201).json(item);
+  } catch (err) {
+    logger.error({ err }, 'api error');
+    res.status(500).json({ error: 'Failed to create feedback' });
+  }
+});
+
+app.patch('/api/feedback/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
+    const existing = stmtSelectFeedbackById.get(id);
+    if (!existing) return res.status(404).json({ error: 'Feedback not found' });
+    const resolved = req.body?.resolved ? 1 : 0;
+    stmtUpdateFeedbackResolved.run({ id, resolved });
+    const item = stmtSelectFeedbackById.get(id);
+    broadcast('feedback:updated', { item }, senderOf(req));
+    res.json(item);
+  } catch (err) {
+    logger.error({ err }, 'api error');
+    res.status(500).json({ error: 'Failed to update feedback' });
+  }
+});
+
+app.delete('/api/feedback/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ error: 'Invalid id' });
+    const info = stmtDeleteFeedback.run(id);
+    if (info.changes === 0) return res.status(404).json({ error: 'Feedback not found' });
+    broadcast('feedback:deleted', { id }, senderOf(req));
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, 'api error');
+    res.status(500).json({ error: 'Failed to delete feedback' });
   }
 });
 

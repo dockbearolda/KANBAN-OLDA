@@ -307,7 +307,11 @@ export default function Board({ clients = [], setClients, onSync, newOrderOpen =
       qty: data.qty ?? 0,
       note: data.note ?? '',
       assignees: data.assignees ?? '',
+      due_date: data.due_date ?? null,
+      urgent: data.urgent ?? 0,
       client_id: matchedClient ? matchedClient.id : null,
+      contact_name: (data.contact_name ?? '').trim() || matchedClient?.name || '',
+      phone: phone || matchedClient?.phone || '',
       position,
     });
     setOrders((prev) => [...prev, created]);

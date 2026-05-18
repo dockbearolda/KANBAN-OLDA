@@ -6,6 +6,7 @@ import * as api from './api.js';
 import { socket, isOwnEcho } from './socket.js';
 
 const ClientsPanel = lazy(() => import('./components/ClientsPanel.jsx'));
+const FeedbackModal = lazy(() => import('./components/FeedbackModal.jsx'));
 
 function Shell() {
   const { currentUser } = useUser();
@@ -13,6 +14,8 @@ function Shell() {
   const [clientsTouched, setClientsTouched] = useState(false);
   const [clients, setClients] = useState([]);
   const [newOrderOpen, setNewOrderOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackTouched, setFeedbackTouched] = useState(false);
 
   const loadClients = useCallback(async () => {
     try {
@@ -67,6 +70,11 @@ function Shell() {
   const handleCloseClients = useCallback(() => setClientsOpen(false), []);
   const handleNewOrder = useCallback(() => setNewOrderOpen(true), []);
   const handleCloseNewOrder = useCallback(() => setNewOrderOpen(false), []);
+  const handleOpenFeedback = useCallback(() => {
+    setFeedbackTouched(true);
+    setFeedbackOpen(true);
+  }, []);
+  const handleCloseFeedback = useCallback(() => setFeedbackOpen(false), []);
 
   // Keyboard shortcuts (Chrome Windows). Ctrl+N is reserved by Chrome for a
   // new window, so we use Ctrl+Alt+N to avoid the conflict. Ctrl+K toggles
@@ -95,6 +103,7 @@ function Shell() {
       <Header
         onNewOrder={handleNewOrder}
         onOpenClients={handleOpenClients}
+        onOpenFeedback={handleOpenFeedback}
       />
       <Board
         clients={clients}
@@ -109,6 +118,14 @@ function Shell() {
             onClose={handleCloseClients}
             clients={clients}
             setClients={setClients}
+          />
+        </Suspense>
+      )}
+      {feedbackTouched && (
+        <Suspense fallback={null}>
+          <FeedbackModal
+            open={feedbackOpen}
+            onClose={handleCloseFeedback}
           />
         </Suspense>
       )}
