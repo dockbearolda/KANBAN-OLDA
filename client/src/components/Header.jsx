@@ -20,11 +20,28 @@ const USER_LABELS = {
   [VIEW_ALL]: 'Toutes les cartes',
 };
 
-export default function Header({ onNewOrder, onOpenClients, onOpenFeedback }) {
+export default function Header({ onNewOrder, onOpenClients, onOpenFeedback, searchQuery = '', onSearchChange }) {
   const { currentUser, setCurrentUser } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFeedbackCount, setOpenFeedbackCount] = useState(0);
   const menuRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Focus search with "/" (like GitHub), unless typing in another input/editable.
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (!t) return;
+      const tag = (t.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || t.isContentEditable) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+      searchRef.current?.select();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     function handleClick(e) {
@@ -71,13 +88,53 @@ export default function Header({ onNewOrder, onOpenClients, onOpenFeedback }) {
         <span>Nouvelle commande</span>
       </button>
 
-      <div className="flex-1 max-w-md">
+      <div className="flex-1 max-w-md relative">
+        <svg
+          width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
         <input
+          ref={searchRef}
           type="text"
-          disabled
-          placeholder="Rechercher…"
-          className="w-full h-9 px-3 rounded-lg bg-slate-100 text-sm text-slate-500 placeholder:text-slate-400 disabled:cursor-not-allowed focus:outline-none"
+          value={searchQuery}
+          onChange={(e) => onSearchChange?.(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              if (searchQuery) {
+                e.preventDefault();
+                onSearchChange?.('');
+              } else {
+                e.currentTarget.blur();
+              }
+            }
+          }}
+          placeholder="Rechercher (titre, client, téléphone, produit, note)…"
+          aria-label="Rechercher dans les commandes"
+          className="w-full h-9 pl-9 pr-9 rounded-lg bg-slate-100 hover:bg-slate-50 focus:bg-white text-sm text-slate-800 placeholder:text-slate-400 border border-transparent focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => { onSearchChange?.(''); searchRef.current?.focus(); }}
+            aria-label="Effacer la recherche"
+            title="Effacer"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-200"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+        {!searchQuery && (
+          <kbd className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 h-5 px-1.5 items-center rounded border border-slate-300 bg-white text-[10px] font-mono text-slate-400 pointer-events-none">
+            /
+          </kbd>
+        )}
       </div>
 
       <button

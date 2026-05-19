@@ -16,6 +16,7 @@ function Shell() {
   const [newOrderOpen, setNewOrderOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackTouched, setFeedbackTouched] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadClients = useCallback(async () => {
     try {
@@ -104,12 +105,15 @@ function Shell() {
         onNewOrder={handleNewOrder}
         onOpenClients={handleOpenClients}
         onOpenFeedback={handleOpenFeedback}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
       <Board
         clients={clients}
         setClients={setClients}
         newOrderOpen={newOrderOpen}
         onCloseNewOrder={handleCloseNewOrder}
+        searchQuery={searchQuery}
       />
       {clientsTouched && (
         <Suspense fallback={null}>

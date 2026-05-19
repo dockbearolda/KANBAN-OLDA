@@ -80,7 +80,26 @@ function computePosition(sortedZoneItemsWithoutActive, targetIndex) {
   return (prev + next) / 2;
 }
 
-export default function Board({ clients = [], setClients, onSync, newOrderOpen = false, onCloseNewOrder }) {
+function normalizeForSearch(str) {
+  return String(str ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
+
+function orderMatchesSearch(order, normalizedTerms) {
+  if (normalizedTerms.length === 0) return true;
+  const hay = [
+    order.title,
+    order.contact_name,
+    order.phone,
+    order.product,
+    order.note,
+  ].map(normalizeForSearch).join(' ');
+  return normalizedTerms.every((t) => hay.includes(t));
+}
+
+export default function Board({ clients = [], setClients, onSync, newOrderOpen = false, onCloseNewOrder, searchQuery = '' }) {
   const { currentUser } = useUser();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -322,14 +341,24 @@ export default function Board({ clients = [], setClients, onSync, newOrderOpen =
 
   // Filter by selected user (assignees include the user). When VIEW_ALL,
   // every card is visible — that's the default state on first load.
+  // Then apply the free-text search across multiple fields (accent/case
+  // insensitive), splitting on whitespace so every term must match.
   const visibleOrders = useMemo(() => {
-    if (currentUser === VIEW_ALL) return orders;
-    return orders.filter((o) => {
-      const a = o.assignees;
-      if (!a) return false;
-      return String(a).split(',').map((s) => s.trim()).includes(currentUser);
-    });
-  }, [orders, currentUser]);
+    const userFiltered =
+      currentUser === VIEW_ALL
+        ? orders
+        : orders.filter((o) => {
+            const a = o.assignees;
+            if (!a) return false;
+            return String(a).split(',').map((s) => s.trim()).includes(currentUser);
+          });
+
+    const terms = normalizeForSearch(searchQuery)
+      .split(/\s+/)
+      .filter(Boolean);
+    if (terms.length === 0) return userFiltered;
+    return userFiltered.filter((o) => orderMatchesSearch(o, terms));
+  }, [orders, currentUser, searchQuery]);
 
   // Stable per-zone arrays: when a zone's items haven't changed (same orders
   // in the same order, same object refs), reuse the previous array. This lets
