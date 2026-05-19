@@ -135,6 +135,7 @@ function CardImpl({ order, clients = [], onPatch, onDelete, onMounted }) {
         onChange={handleChange}
         onDelete={onDelete}
         prodBadge={prodBadge}
+        status={order.status}
       />
     </div>
   );
