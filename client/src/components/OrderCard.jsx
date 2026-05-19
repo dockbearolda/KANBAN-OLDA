@@ -47,17 +47,14 @@ function formatPhoneForWhatsApp(phone) {
 }
 
 function buildReadyMessage(userKey) {
-  const name = SENDER_NAMES[userKey];
-  const intro = name
-    ? `Bonjour, c'est ${name} de l'Atelier OLDA.`
-    : `Bonjour, c'est l'équipe de l'Atelier OLDA.`;
   return [
-    intro,
-    'Vos produits sont prêts et disponibles à l’atelier.',
-    'Nous sommes ouverts du :',
-    'Lundi au vendredi,',
-    'de 9h00 à 18h00, en continu.',
-    'N’hésitez pas à passer quand cela vous arrange !',
+    'Bonjour,',
+    'C’est l’équipe de l’Atelier OLDA',
+    'Votre commande est prête et disponible à la boutique.',
+    'Nous vous accueillons du lundi au vendredi, de 9h00 à 18h00 en continu.',
+    'N’hésitez pas à passer récupérer votre commande quand cela vous arrange',
+    'À bientôt,',
+    'L’équipe Atelier OLDA',
   ].join('\n');
 }
 
